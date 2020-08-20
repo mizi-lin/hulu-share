@@ -1,0 +1,19 @@
+node_modules
+#---------------------------------
+# IDE generated
+#---------------------------------
+.idea/
+.project
+*.iml
+vscode
+.vscode
+
+#---------------------------------
+# OS generated
+#---------------------------------
+__MACOSX/
+.DS_Store
+Thumbs.db
+yarn.lock
+
+
