@@ -8,8 +8,8 @@ function createElement(
     console.debug(arguments);
     return {
         type,
-        props,
-        children
+        props: props ?? {},
+        children: children.flat()
     };
 }
 

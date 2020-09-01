@@ -4,4 +4,5 @@ export type CElement = {
     children: HuluNode[];
 };
 
-export type HuluNode = CElement | any;
+export type HuluNode = CElement | undefined | null | string | number | boolean;
+export type ComponentProps<P> = Readonly<P> & { children?: HuluNode[] };
