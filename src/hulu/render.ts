@@ -1,4 +1,4 @@
-import { HuluNode, CElement } from '../types/index';
+import { HuluNode, CElement, RENDER_PROCESS } from '../types/index';
 import Component from './component';
 
 /**
@@ -25,7 +25,7 @@ function setAttribute(element: HTMLElement, key: string, value: any) {
  * @param comp
  */
 function renderComponent(comp: Component): HTMLElement {
-    return transform(comp.render()) as HTMLElement;
+    return transform(comp.prevRender(RENDER_PROCESS.INIT)) as HTMLElement;
 }
 
 /**
