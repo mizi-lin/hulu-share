@@ -1,12 +1,14 @@
 import { HuluNode, ComponentProps, RENDER_PROCESS } from '../types/index';
 import { render, transform } from './render';
+import { deepClone } from './utils';
 
 class Component<P = {}, S = {}> {
     readonly props: ComponentProps<P>;
-    state: Readonly<S> | undefined;
+    state: Readonly<S>;
     _owner!: HTMLElement;
     constructor(props: ComponentProps<P>) {
         this.props = props ?? {};
+        this.state = {} as Readonly<S>;
     }
 
     appendChild(child: HuluNode): void {
@@ -16,21 +18,8 @@ class Component<P = {}, S = {}> {
         this.props.children.push(child);
     }
 
-    setState(state: Partial<S>) {
-        Object.assign(this.state, state);
-        this.update();
-    }
-
-    /**
-     * todo
-     * render 方法之前调用
-     */
-    prevRender(process: RENDER_PROCESS) {
-        // todo getDerivedStateFromProps
-        if (RENDER_PROCESS.UPDATE === process) {
-            // todo shouldComponentUpdate
-        }
-        return this.render();
+    applyDerivedStateFromProps(nextProps: P, prevState: S): Partial<S> {
+        return {};
     }
 
     /**
@@ -38,6 +27,49 @@ class Component<P = {}, S = {}> {
      */
     render(): HuluNode {
         return;
+    }
+
+    shouldComponentUpdate(nextProps: P, nextState: S): boolean {
+        return true;
+    }
+
+    getSnapshotBeforeUpdate(prevProps: P, prevState: S): any {
+        return null;
+    }
+
+    componentDidUpdate(prevProps: P, prevState: S, snapshot: any) {
+        return null;
+    }
+
+    setState(state: Partial<S>) {
+        let currentState = deepClone(this.state);
+        let nextState = Object.assign({}, this.state, state);
+
+        nextState = Object.assign(
+            nextState,
+            this.applyDerivedStateFromProps(this.props, nextState)
+        );
+
+        let prevent = !this.shouldComponentUpdate(this.props, nextState);
+
+        this.state = nextState;
+
+        if (prevent) {
+            return void 0;
+        }
+
+        this.update(this.props, currentState);
+    }
+
+    /**
+     * todo
+     * render 方法之前调用
+     */
+    wrapperRender() {
+        // do getDerivedStateFromProps
+        let partialState = this.applyDerivedStateFromProps(this.props, this.state);
+        Object.assign(this.state, partialState);
+        return this.render();
     }
 
     /**
@@ -50,11 +82,14 @@ class Component<P = {}, S = {}> {
         // todo componentDidMount
     }
 
-    update() {
-        let renderer = transform(this.prevRender(RENDER_PROCESS.UPDATE)) as HTMLElement;
-        // todo getSnapshotBeforeUpdate
+    update(prevProps: P, prevState: S) {
+        // do getSnapshotBeforeUpdate
+        const snapshot = this.getSnapshotBeforeUpdate(prevProps, prevState);
+        const renderer = transform(this.render()) as HTMLElement;
         this._owner?.parentNode?.replaceChild(renderer, this._owner);
-        // todo componentDidUpdate
+        // do componentDidUpdate
+        this.componentDidUpdate(prevProps, prevState, snapshot);
+        // todo componentWillUnmount
         this._owner = renderer;
     }
 }

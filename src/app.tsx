@@ -1,75 +1,57 @@
 import Hulu from './hulu';
 import { HuluNode } from './types/index';
 
-const a = (
-    <div>
-        {true} {1}
-        a
-        <br />b 江山如此多娇
-        <ol>
-            <li tabIndex={1}>1</li>
-            <li tabIndex={2}>2</li>
-            <li>3</li>
-            <li>4</li>
-        </ol>
-    </div>
-);
-
-// ---------
-interface DefProps {
-    aaa: string;
-    children: HuluNode;
-}
-function Def(props: DefProps) {
-    return (
-        <div>
-            <div>{props.aaa}</div>
-            <div>{props.children}</div>
-        </div>
-    );
-}
-
-// ---------
-
-interface AbcProps {
-    title: string;
-}
-
-interface AbcState {
+interface HuluDemoLoginProps {}
+interface HuluDemoLoginState {
     count: number;
+    aaa: number;
+    show?: string;
 }
 
-class Abc extends Hulu.Component<AbcProps> {
-    state: AbcState = {
-        count: 0
+export default class HuluDemoLogin extends Hulu.Component<HuluDemoLoginProps, HuluDemoLoginState> {
+    state: HuluDemoLoginState = {
+        count: 0,
+        aaa: 1
     };
-    constructor(props: AbcProps) {
-        super(props);
+
+    static getDerivedStateFromProps(props, nextState) {
+        console.debug('getDerivedStateFromProps', nextState);
+        return {
+            show: nextState.count + ' time'
+        };
     }
+
+    componentDidMount() {
+        console.debug('did mount');
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        console.debug(nextState, this.state);
+        return true;
+    }
+
+    // componentDidUpdate(prevProps, prevState) {
+    //     console.debug('did update', prevProps, prevState)
+    // }
+
     render() {
         return (
-            <div>
-                <header tabIndex={1}>{this.props.title}</header>
-                <div
+            <div style="padding: 50px">
+                <div>{this.state.count}</div>
+                <div>{this.state.show}</div>
+
+                <button
                     onClick={() => {
                         this.setState({
                             count: this.state.count + 1
                         });
                     }}>
-                    count: {this.state.count}
-                </div>
-                {a} {this.props.children}
-                <Def aaa="AAAAAAAAAAA">
-                    <div>BBBBBBBB</div>
-                </Def>
+                    {' '}
+                    {this.state.aaa} +{' '}
+                </button>
             </div>
         );
     }
 }
 
-Hulu.render(
-    <Abc title="沁园春.雪">
-        <div>引无数英雄竞折腰</div>
-    </Abc>,
-    document.getElementById('root')
-);
+Hulu.render(<HuluDemoLogin />, document.getElementById('root'));

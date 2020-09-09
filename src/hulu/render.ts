@@ -25,7 +25,7 @@ function setAttribute(element: HTMLElement, key: string, value: any) {
  * @param comp
  */
 function renderComponent(comp: Component): HTMLElement {
-    return transform(comp.prevRender(RENDER_PROCESS.INIT)) as HTMLElement;
+    return transform(comp.wrapperRender()) as HTMLElement;
 }
 
 /**
@@ -34,10 +34,17 @@ function renderComponent(comp: Component): HTMLElement {
  * @param cElement
  */
 function setComponentProps(comp: Component, cElement: CElement) {
-    let { props, children = [] } = cElement;
+    let { type: Comp, props, children = [] } = cElement;
     children.forEach((vchild: HuluNode) => {
         comp.appendChild(vchild);
     });
+
+    // 用组件使用静态方法 getDerivedStateFromProps
+    if (Comp.getDerivedStateFromProps) {
+        comp.applyDerivedStateFromProps = function (nextProps, prevState) {
+            return Comp.getDerivedStateFromProps(nextProps, prevState) ?? {};
+        };
+    }
 
     comp._owner = renderComponent(comp);
 }
@@ -49,6 +56,7 @@ function setComponentProps(comp: Component, cElement: CElement) {
 function createComponent(cElement: CElement) {
     let { type: Comp, props, children = [] } = cElement;
     let comp;
+    props = Object.assign(props, Comp.defaultProps ?? {});
     if (Comp?.prototype?.render) {
         comp = new Comp(props);
     } else {
