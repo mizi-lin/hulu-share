@@ -5,7 +5,6 @@ function createElement(
     props: Record<string, any>,
     ...children: HuluNode[]
 ): CElement {
-    console.debug(arguments);
     return {
         type,
         props,

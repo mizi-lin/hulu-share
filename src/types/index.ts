@@ -6,3 +6,4 @@ export type CElement = {
 
 export type HuluNode = CElement | undefined | null | string | number | boolean;
 export type ComponentProps<P> = Readonly<P> & { children?: HuluNode[] };
+export type ComponentState<P> = Readonly<P>;

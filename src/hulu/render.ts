@@ -1,25 +1,7 @@
 import { HuluNode, CElement } from '../types/index';
 import Component from './component';
-
-/**
- * 处理html 属性标签
- * @param element
- * @param key
- * @param value
- */
-function setAttribute(element: any, key: string, value: any) {
-    // todo style
-    // todo className
-    // todo __html
-
-    if (/^on([A-Z])([\s\S]+)/.test(key)) {
-        let eventName = RegExp.$1.toLowerCase() + RegExp.$2;
-        element.addEventListener(eventName, value);
-        return;
-    }
-
-    element.setAttribute(key, String(value));
-}
+import TextWrapper from './text-wrapper';
+import ElementWrapper from './element-wrapper';
 
 function setComponentProps(comp: any, huluNode: CElement) {
     let { type: Comp, children } = huluNode;
@@ -27,8 +9,14 @@ function setComponentProps(comp: any, huluNode: CElement) {
         comp.appendChild(child);
     });
 
+    if (Comp.getDerivedStateFromProps) {
+        comp.applyDerivedStateFromProps = (props: any, state: any) => {
+            Object.assign(state, Comp.getDerivedStateFromProps(props, state) ?? {});
+        };
+    }
+
     // 获取组件自己的element
-    comp._owner = transform(comp.render());
+    comp._owner = transform(comp.prender())._owner;
 }
 
 /**
@@ -40,6 +28,9 @@ function createComponent(huluNode: CElement) {
     let comp;
 
     if (Comp?.prototype?.render) {
+        if (Comp?.defaultProps) {
+            Object.assign(props, Comp.defaultProps);
+        }
         comp = new Comp(props);
     } else {
         comp = new Component(props);
@@ -58,7 +49,7 @@ function createComponent(huluNode: CElement) {
  * 将虚拟的DOM转为实体DOM
  * @param huluNode
  */
-export function transform(huluNode: HuluNode): HTMLElement | Text {
+export function transform(huluNode: HuluNode) {
     /**
      * 处理HuluNode中除了组件和HTML TAG 之外的情况
      */
@@ -71,7 +62,7 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
     }
 
     if (typeof huluNode === 'string') {
-        return document.createTextNode(huluNode);
+        return new TextWrapper(huluNode);
     }
 
     /**
@@ -80,23 +71,24 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
     if (typeof huluNode.type !== 'string') {
         // todo 处理类组件
         let comp = createComponent(huluNode as CElement);
-        return comp._owner;
+        return comp;
     }
 
     /**
      * 处理HTML TAG
      */
-    let element = document.createElement(huluNode.type);
+    let elementWrapper = new ElementWrapper(huluNode.type);
 
-    huluNode.children.forEach((child: HuluNode) => {
-        render(child, element);
+    huluNode.children.forEach((vchild: HuluNode) => {
+        elementWrapper.appendChild(vchild);
     });
 
+    //
     Object.entries(huluNode.props ?? {}).forEach(([key, value]) => {
-        setAttribute(element, key, value);
+        elementWrapper.setAttribute(key, value);
     });
 
-    return element;
+    return elementWrapper;
 }
 
 /**
@@ -107,7 +99,11 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
 function render(huluNode: HuluNode, container: HTMLElement | null) {
     let root = container ?? document.body;
     let renderer = transform(huluNode);
-    root.appendChild(renderer);
+    if (renderer?.mountTo) {
+        renderer?.mountTo(root);
+    } else {
+        root.appendChild(renderer);
+    }
 }
 
 export default render;
