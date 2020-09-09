@@ -29,6 +29,8 @@ class Component<P = {}, S = {}> {
         return;
     }
 
+    componentDidMount() {}
+
     shouldComponentUpdate(nextProps: P, nextState: S): boolean {
         return true;
     }
@@ -76,21 +78,22 @@ class Component<P = {}, S = {}> {
      * todo
      * 挂载
      */
-    mount(root: HTMLElement) {
+    mountTo(root: HTMLElement) {
         // 将组件DOM挂载在root
         root.appendChild(this._owner);
-        // todo componentDidMount
+        // do componentDidMount
+        this.componentDidMount();
     }
 
     update(prevProps: P, prevState: S) {
         // do getSnapshotBeforeUpdate
         const snapshot = this.getSnapshotBeforeUpdate(prevProps, prevState);
-        const renderer = transform(this.render()) as HTMLElement;
-        this._owner?.parentNode?.replaceChild(renderer, this._owner);
+        const renderer = transform(this.render());
+        this._owner?.parentNode?.replaceChild(renderer._owner, this._owner);
         // do componentDidUpdate
         this.componentDidUpdate(prevProps, prevState, snapshot);
         // todo componentWillUnmount
-        this._owner = renderer;
+        this._owner = renderer._owner;
     }
 }
 
