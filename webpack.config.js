@@ -4,6 +4,7 @@ const path = require('path');
 module.exports = {
     entry: './src/app.tsx',
     mode: 'development',
+    devtool: 'cheap-module-source-map',
 
     devServer: {
         contentBase: './public',

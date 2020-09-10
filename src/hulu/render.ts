@@ -1,5 +1,7 @@
 import { HuluNode, CElement } from '../types/index';
 import Component from './component';
+import TextWrapper from './text-wrapper';
+import ElementWrapper from './element-wrapper';
 
 /**
  * 处理html 属性标签
@@ -27,8 +29,14 @@ function setComponentProps(comp: any, huluNode: CElement) {
         comp.appendChild(child);
     });
 
+    if (Comp.getDerivedStateFromProps) {
+        comp.applyDerivedStateFromProps = function (props: any, state: any) {
+            return Comp.getDerivedStateFromProps(props, state) ?? {};
+        };
+    }
+
     // 获取组件自己的element
-    comp._owner = transform(comp.render());
+    comp._owner = transform(comp.prevRender())._owner;
 }
 
 /**
@@ -38,6 +46,8 @@ function setComponentProps(comp: any, huluNode: CElement) {
 function createComponent(huluNode: CElement) {
     let { type: Comp, props } = huluNode;
     let comp;
+
+    props = Object.assign(props, Comp.defaultProps ?? {});
 
     if (Comp?.prototype?.render) {
         comp = new Comp(props);
@@ -58,7 +68,7 @@ function createComponent(huluNode: CElement) {
  * 将虚拟的DOM转为实体DOM
  * @param huluNode
  */
-export function transform(huluNode: HuluNode): HTMLElement | Text {
+export function transform(huluNode: HuluNode): any {
     /**
      * 处理HuluNode中除了组件和HTML TAG 之外的情况
      */
@@ -71,7 +81,7 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
     }
 
     if (typeof huluNode === 'string') {
-        return document.createTextNode(huluNode);
+        return new TextWrapper(huluNode);
     }
 
     /**
@@ -80,23 +90,24 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
     if (typeof huluNode.type !== 'string') {
         // todo 处理类组件
         let comp = createComponent(huluNode as CElement);
-        return comp._owner;
+        return comp;
     }
 
     /**
      * 处理HTML TAG
      */
-    let element = document.createElement(huluNode.type);
+    let elementWrapper = new ElementWrapper(huluNode.type);
 
-    huluNode.children.forEach((child: HuluNode) => {
-        render(child, element);
+    huluNode.children.forEach((vchild: HuluNode) => {
+        // render(child, element);
+        transform(vchild).mountTo(elementWrapper._owner);
     });
 
     Object.entries(huluNode.props ?? {}).forEach(([key, value]) => {
-        setAttribute(element, key, value);
+        setAttribute(elementWrapper._owner, key, value);
     });
 
-    return element;
+    return elementWrapper;
 }
 
 /**
@@ -107,7 +118,8 @@ export function transform(huluNode: HuluNode): HTMLElement | Text {
 function render(huluNode: HuluNode, container: HTMLElement | null) {
     let root = container ?? document.body;
     let renderer = transform(huluNode);
-    root.appendChild(renderer);
+    // root.appendChild(renderer);
+    renderer.mountTo(root);
 }
 
 export default render;
